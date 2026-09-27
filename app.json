@@ -34,7 +34,8 @@
                 }
             ],
             "expo-sqlite",
-            "react-native-edge-to-edge"
+            "react-native-edge-to-edge",
+            "./plugins/withIOSSceneDelegate.js"
         ],
         "experiments": {
             "reactCompiler": true
