@@ -1,7 +1,7 @@
 // Form controls for the custom-rule editor. Same visual language as the new-game
 // form: underlined text inputs, boxed numbers, segmented choices.
 
-import { Switch, Text, TextInput, type TextInputProps, View } from "react-native";
+import { Switch, Text, TextInput, View } from "react-native";
 
 import { useColors } from "@/theme/colors";
 
@@ -12,13 +12,11 @@ export function TextField({
     value,
     onChange,
     placeholder,
-    onFocus,
 }: {
     label: string;
     value: string;
     onChange: (v: string) => void;
     placeholder: string;
-    onFocus?: TextInputProps["onFocus"];
 }) {
     const c = useColors();
     return (
@@ -27,7 +25,6 @@ export function TextField({
             <TextInput
                 value={value}
                 onChangeText={onChange}
-                onFocus={onFocus}
                 accessibilityLabel={label}
                 placeholder={placeholder}
                 placeholderTextColor={c.muted}
@@ -52,13 +49,11 @@ export function NumField({
     value,
     onChange,
     placeholder,
-    onFocus,
 }: {
     label: string;
     value: string;
     onChange: (v: string) => void;
     placeholder: string;
-    onFocus?: TextInputProps["onFocus"];
 }) {
     const c = useColors();
     return (
@@ -68,7 +63,6 @@ export function NumField({
                 value={value}
                 // Keep digits only: the numeric keypad still exposes symbols on some devices.
                 onChangeText={(v) => onChange(v.replace(/[^0-9]/g, ""))}
-                onFocus={onFocus}
                 accessibilityLabel={label}
                 placeholder={placeholder}
                 placeholderTextColor={c.faint}

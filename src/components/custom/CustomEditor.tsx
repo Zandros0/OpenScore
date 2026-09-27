@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, type TextInputProps, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
 
 import { draftFromRule, emptyDraft, ruleFromDraft, validateDraft, type RuleDraft } from "@/games";
 import { deleteCustomRule, saveCustomRule } from "@/store/gameStore";
@@ -13,14 +13,10 @@ import { Display } from "../ui/Txt";
 import { Chevron } from "../ui/icons";
 import { CustomForm } from "./CustomForm";
 
-/** Sticky CTA bar height (58 button + 12 top padding) + breathing room. */
-const CTA_CLEARANCE = 88;
-
 /** Editor for one custom rule. `ruleId` undefined = creation. */
 export function CustomEditor({ ruleId }: { ruleId?: string }) {
     const router = useRouter();
     const c = useColors();
-    const scroll = useRef<ScrollView>(null);
     const existing = useCustomRule(ruleId);
     // The route decides the mode, not the lookup: the rule can be missing (store not
     // hydrated yet) or gone (just deleted) while this screen is still mounted.
@@ -67,10 +63,6 @@ export function CustomEditor({ ruleId }: { ruleId?: string }) {
         ]);
     };
 
-    // Lift the focused field above the keyboard, clearing the sticky CTA bar.
-    const reveal: NonNullable<TextInputProps["onFocus"]> = (e) =>
-        scroll.current?.scrollResponderScrollNativeHandleToKeyboard(e.target, CTA_CLEARANCE, true);
-
     return (
         <KeyboardAvoidingView
             className="flex-1 bg-bg dark:bg-bg-dark"
@@ -91,9 +83,9 @@ export function CustomEditor({ ruleId }: { ruleId?: string }) {
             </View>
 
             <ScrollView
-                ref={scroll}
                 className="flex-1"
-                contentContainerClassName="pb-6"
+                contentContainerClassName="pb-[88px]"
+                automaticallyAdjustKeyboardInsets
                 keyboardShouldPersistTaps="always"
                 keyboardDismissMode="none"
                 showsVerticalScrollIndicator={false}
@@ -108,7 +100,6 @@ export function CustomEditor({ ruleId }: { ruleId?: string }) {
                 <CustomForm
                     draft={draft}
                     patch={patch}
-                    onFocus={reveal}
                 />
 
                 {editing && (

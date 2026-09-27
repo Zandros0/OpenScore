@@ -1,4 +1,4 @@
-import { Pressable, Text, TextInput, type TextInputProps, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 
 import { useColors } from "@/theme/colors";
 
@@ -21,16 +21,16 @@ export function PlayerRow({
     index,
     value,
     onChange,
-    onFocus,
     onRemove,
     last,
+    inputRef,
 }: {
     index: number;
     value: string;
     onChange: (v: string) => void;
-    onFocus?: TextInputProps["onFocus"];
     onRemove?: () => void;
     last: boolean;
+    inputRef?: (el: TextInput | null) => void;
 }) {
     const c = useColors();
     return (
@@ -39,7 +39,7 @@ export function PlayerRow({
             <TextInputRow
                 value={value}
                 onChange={onChange}
-                onFocus={onFocus}
+                inputRef={inputRef}
                 placeholder={`Joueur ${index + 1}`}
                 color={c.ink}
                 muted={c.muted}
@@ -80,23 +80,23 @@ export function AddPlayerButton({ onPress, disabled }: { onPress: () => void; di
 function TextInputRow({
     value,
     onChange,
-    onFocus,
     placeholder,
     color,
     muted,
+    inputRef,
 }: {
     value: string;
     onChange: (v: string) => void;
-    onFocus?: TextInputProps["onFocus"];
     placeholder: string;
     color: string;
     muted: string;
+    inputRef?: (el: TextInput | null) => void;
 }) {
     return (
         <TextInput
+            ref={inputRef}
             value={value}
             onChangeText={onChange}
-            onFocus={onFocus}
             accessibilityLabel={placeholder}
             placeholder={placeholder}
             placeholderTextColor={muted}

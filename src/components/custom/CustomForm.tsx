@@ -1,7 +1,7 @@
 // Body of the custom-rule editor: every field of `RuleDraft`, no logic beyond
 // patching the draft. Validation and persistence live in CustomEditor.
 
-import { Text, type TextInputProps, View } from "react-native";
+import { Text, View } from "react-native";
 
 import type { RuleDraft, ScoreDirection } from "@/games";
 
@@ -16,11 +16,9 @@ const DIRECTIONS: { value: ScoreDirection; title: string; meta: string }[] = [
 export function CustomForm({
     draft,
     patch,
-    onFocus,
 }: {
     draft: RuleDraft;
     patch: (p: Partial<RuleDraft>) => void;
-    onFocus?: TextInputProps["onFocus"];
 }) {
     return (
         <View className="gap-6 px-6 pb-3 pt-5">
@@ -29,7 +27,6 @@ export function CustomForm({
                 value={draft.name}
                 onChange={(name) => patch({ name })}
                 placeholder="Mon jeu"
-                onFocus={onFocus}
             />
 
             <TextField
@@ -37,7 +34,6 @@ export function CustomForm({
                 value={draft.description}
                 onChange={(description) => patch({ description })}
                 placeholder="Générée si laissée vide"
-                onFocus={onFocus}
             />
 
             <Field label="Score gagnant">
@@ -55,14 +51,12 @@ export function CustomForm({
                         value={draft.minPlayers}
                         onChange={(minPlayers) => patch({ minPlayers })}
                         placeholder="2"
-                        onFocus={onFocus}
                     />
                     <NumField
                         label="Maximum"
                         value={draft.maxPlayers}
                         onChange={(maxPlayers) => patch({ maxPlayers })}
                         placeholder="6"
-                        onFocus={onFocus}
                     />
                 </View>
             </Field>
@@ -76,21 +70,18 @@ export function CustomForm({
                         // switch can never stay on while its control is greyed out.
                         onChange={(maxRoundScore) => patch({ maxRoundScore, autoFillLast: draft.autoFillLast && !!maxRoundScore })}
                         placeholder="—"
-                        onFocus={onFocus}
                     />
                     <NumField
                         label="Pts / partie"
                         value={draft.maxGameScore}
                         onChange={(maxGameScore) => patch({ maxGameScore })}
                         placeholder="—"
-                        onFocus={onFocus}
                     />
                     <NumField
                         label="Manches"
                         value={draft.maxRounds}
                         onChange={(maxRounds) => patch({ maxRounds })}
                         placeholder="—"
-                        onFocus={onFocus}
                     />
                 </View>
                 <Text className="mt-2 text-[12px] leading-[16px] text-muted">

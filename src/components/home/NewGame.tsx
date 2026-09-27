@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
-import { useMemo, useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, type TextInputProps, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import { getRule } from "@/games";
 import { createGame, todayLabel } from "@/lib/game";
@@ -20,15 +20,11 @@ function clamp(players: string[], min: number, max: number): string[] {
     return next;
 }
 
-/** Sticky CTA bar height (58 button + 12 top padding) + breathing room. */
-const CTA_CLEARANCE = 88;
-
 export function NewGame() {
     const router = useRouter();
     const c = useColors();
     const history = useHistory();
     const customs = useCustomRules();
-    const scroll = useRef<ScrollView>(null);
 
     const [name, setName] = useState("");
     const [ruleId, setRuleId] = useState("defaut");
@@ -39,8 +35,22 @@ export function NewGame() {
     // while this form stays mounted, so its bounds must always win over the typed rows.
     const players = useMemo(() => clamp(entered, rule.minPlayers, rule.maxPlayers), [entered, rule.minPlayers, rule.maxPlayers]);
 
+    // Focus the row just appended by "Ajouter un joueur". Set on click, consumed once the
+    // new row exists so `.focus()` targets an already-mounted input.
+    const inputRefs = useRef<(TextInput | null)[]>([]);
+    const pendingFocus = useRef<number | null>(null);
+    useEffect(() => {
+        if (pendingFocus.current === null) return;
+        const i = pendingFocus.current;
+        pendingFocus.current = null;
+        inputRefs.current[i]?.focus();
+    }, [players.length]);
+
     const addPlayer = () => {
-        if (players.length < rule.maxPlayers) setEntered([...players, ""]);
+        if (players.length < rule.maxPlayers) {
+            pendingFocus.current = players.length;
+            setEntered([...players, ""]);
+        }
     };
     const removePlayer = (i: number) => {
         if (players.length > rule.minPlayers) setEntered(players.filter((_, idx) => idx !== i));
@@ -50,12 +60,6 @@ export function NewGame() {
         startGame(createGame({ name, gameRuleId: ruleId, players }));
         router.push("/game");
     };
-
-    // Lift the focused field above the keyboard. KeyboardAvoidingView shrinks
-    // the form to the space left over, and this scrolls the input that just
-    // took focus into it, clearing the sticky "Démarrer" bar.
-    const reveal: NonNullable<TextInputProps["onFocus"]> = (e) =>
-        scroll.current?.scrollResponderScrollNativeHandleToKeyboard(e.target, CTA_CLEARANCE, true);
 
     return (
         <KeyboardAvoidingView
@@ -67,11 +71,15 @@ export function NewGame() {
              * names means tapping between fields and scrolling, and losing the
              * keyboard on every one of those is what made the flow painful.
              * Both inputs keep returnKeyType="done" as the way out.
+             *
+             * automaticallyAdjustKeyboardInsets scrolls the focused field above
+             * the keyboard natively (iOS). The extra bottom padding clears the
+             * sticky "Démarrer" bar, which sits outside this ScrollView.
              */}
             <ScrollView
-                ref={scroll}
                 className="flex-1"
-                contentContainerClassName="pt-safe-offset-3 pb-6"
+                contentContainerClassName="pt-safe-offset-3 pb-[88px]"
+                automaticallyAdjustKeyboardInsets
                 keyboardShouldPersistTaps="always"
                 keyboardDismissMode="none"
                 showsVerticalScrollIndicator={false}
@@ -108,7 +116,6 @@ export function NewGame() {
                         <TextInput
                             value={name}
                             onChangeText={setName}
-                            onFocus={reveal}
                             accessibilityLabel="Nom de la partie"
                             placeholder={todayLabel()}
                             placeholderTextColor={c.muted}
@@ -141,8 +148,10 @@ export function NewGame() {
                                     value={p}
                                     last={i === players.length - 1}
                                     onChange={(v) => setEntered(players.map((x, idx) => (idx === i ? v : x)))}
-                                    onFocus={reveal}
                                     onRemove={players.length > rule.minPlayers ? () => removePlayer(i) : undefined}
+                                    inputRef={(el) => {
+                                        inputRefs.current[i] = el;
+                                    }}
                                 />
                             ))}
                         </View>
