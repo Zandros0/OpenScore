@@ -5,22 +5,33 @@ import type { Game } from "@/lib/types";
 import { useColors } from "@/theme/colors";
 
 import { IconButton } from "../ui/IconButton";
-import { Chart, Dots } from "../ui/icons";
+import { Chart, Chevron, Dots } from "../ui/icons";
 
 type Props = {
     game: Game;
     rule: GameRule;
     /** 0..1 progress toward maxScore, or null when not applicable. */
     progress: number | null;
+    onBack: () => void;
     onCharts: () => void;
     onMenu: () => void;
 };
 
-export function GameHeader({ game, rule, progress, onCharts, onMenu }: Props) {
+export function GameHeader({ game, rule, progress, onBack, onCharts, onMenu }: Props) {
     const c = useColors();
     return (
         <View className="border-b border-line bg-bg px-4 pb-3.5 pt-safe-offset-2 dark:border-line-dark dark:bg-bg-dark">
             <View className="flex-row items-center gap-2.5">
+                <IconButton
+                    onPress={onBack}
+                    accessibilityLabel="Retour à l'accueil"
+                >
+                    <Chevron
+                        dir="left"
+                        color={c.ink}
+                        size={13}
+                    />
+                </IconButton>
                 <View className="min-w-0 flex-1">
                     <Text className="text-[10px] font-bold uppercase tracking-[1.4px] text-muted">
                         {rule.name}

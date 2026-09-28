@@ -1,17 +1,21 @@
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { InputAccessoryView, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import { getRule } from "@/games";
-import { createGame, todayLabel } from "@/lib/game";
-import { startGame } from "@/store/gameStore";
-import { useCustomRules, useHistory } from "@/store/useGame";
+import { createGame, isGameFinished, todayLabel } from "@/lib/game";
+import { deleteActive, endActive, endAndReplay, startGame } from "@/store/gameStore";
+import { useActiveGame, useCustomRules, useHistory } from "@/store/useGame";
 import { useColors } from "@/theme/colors";
 
 import { PrimaryButton } from "../ui/PrimaryButton";
 import { Display, Num } from "../ui/Txt";
+import { Check } from "../ui/icons";
+import { ActiveGameBanner } from "./ActiveGameBanner";
 import { GamePicker } from "./GamePicker";
 import { AddPlayerButton, Field, PlayerRow } from "./parts";
+
+const PAPAYO_TARGET_ACCESSORY_ID = "papayo-target-accessory";
 
 /** Clamp the player list to `[min, max]`, keeping existing names. */
 function clamp(players: string[], min: number, max: number): string[] {
@@ -23,12 +27,17 @@ function clamp(players: string[], min: number, max: number): string[] {
 export function NewGame() {
     const router = useRouter();
     const c = useColors();
+    const active = useActiveGame();
     const history = useHistory();
     const customs = useCustomRules();
 
     const [name, setName] = useState("");
     const [ruleId, setRuleId] = useState("defaut");
     const [entered, setEntered] = useState<string[]>([]);
+    // Papayo-only: target total that ends the game (partie), separate from its fixed
+    // 250 pts/manche round cap. Kept as a string, like other draft number fields, so
+    // clearing it is a valid "no cap" state instead of collapsing to 0.
+    const [papayoTarget, setPapayoTarget] = useState("500");
     const rule = getRule(ruleId);
 
     // Clamped at render, not on selection: a custom rule can be edited from "Mes jeux"
@@ -57,9 +66,28 @@ export function NewGame() {
     };
 
     const start = () => {
-        startGame(createGame({ name, gameRuleId: ruleId, players }));
+        const maxGameScore = ruleId === "papayo" && papayoTarget.trim() ? Number(papayoTarget) : undefined;
+        startGame(createGame({ name, gameRuleId: ruleId, players, maxGameScore }));
         router.push("/game");
     };
+
+    // One game at a time: starting another would silently overwrite this one (no
+    // history entry, since it isn't "ended"), so the form stays unreachable until
+    // it's resumed or deleted from here.
+    if (active) {
+        return (
+            <ActiveGameBanner
+                game={active}
+                finished={isGameFinished(active, getRule(active.gameRuleId))}
+                onResume={() => router.navigate("/game")}
+                onDelete={deleteActive}
+                onEndAndReturnHome={endActive}
+                onEndAndReplay={() => {
+                    if (endAndReplay()) router.navigate("/game");
+                }}
+            />
+        );
+    }
 
     return (
         <KeyboardAvoidingView
@@ -138,6 +166,66 @@ export function NewGame() {
                             onSelect={setRuleId}
                         />
                     </Field>
+
+                    {ruleId === "papayo" && (
+                        <Field label="Objectif de points">
+                            {/* number-pad has no native return key. iOS gets a checkmark docked
+                                to the keyboard itself (reachable without moving the thumb);
+                                Android, which has no InputAccessoryView, gets one inline. */}
+                            <TextInput
+                                value={papayoTarget}
+                                onChangeText={(v) => setPapayoTarget(v.replace(/[^0-9]/g, ""))}
+                                accessibilityLabel="Objectif de points de la partie"
+                                placeholder="500"
+                                placeholderTextColor={c.muted}
+                                keyboardType="number-pad"
+                                maxLength={5}
+                                inputAccessoryViewID={Platform.OS === "ios" ? PAPAYO_TARGET_ACCESSORY_ID : undefined}
+                                style={{
+                                    borderBottomWidth: 1.5,
+                                    borderColor: c.lineStrong,
+                                    paddingVertical: 12,
+                                    fontSize: 17,
+                                    fontWeight: "500",
+                                    fontVariant: ["tabular-nums"],
+                                    color: c.ink,
+                                }}
+                            />
+                            {Platform.OS !== "ios" && (
+                                <Pressable
+                                    onPress={() => Keyboard.dismiss()}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Valider l'objectif de points"
+                                    hitSlop={8}
+                                    className="mt-2 h-9 w-9 items-center justify-center self-start rounded-full bg-accent active:opacity-80"
+                                >
+                                    <Check
+                                        color="#fff"
+                                        size={14}
+                                    />
+                                </Pressable>
+                            )}
+                        </Field>
+                    )}
+
+                    {Platform.OS === "ios" && (
+                        <InputAccessoryView nativeID={PAPAYO_TARGET_ACCESSORY_ID}>
+                            <View className="flex-row justify-start bg-elevated px-3 py-2 dark:bg-elevated-dark">
+                                <Pressable
+                                    onPress={() => Keyboard.dismiss()}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Valider l'objectif de points"
+                                    hitSlop={8}
+                                    className="h-9 w-9 items-center justify-center rounded-full bg-accent active:opacity-80"
+                                >
+                                    <Check
+                                        color="#fff"
+                                        size={14}
+                                    />
+                                </Pressable>
+                            </View>
+                        </InputAccessoryView>
+                    )}
 
                     <Field label="Joueurs">
                         <View>

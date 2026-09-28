@@ -25,12 +25,14 @@ export function GameMenu({
     onClose,
     onRename,
     onEnd,
+    onEndAndReplay,
     onDelete,
 }: {
     visible: boolean;
     onClose: () => void;
     onRename: () => void;
     onEnd: () => void;
+    onEndAndReplay: () => void;
     onDelete: () => void;
 }) {
     return (
@@ -40,6 +42,7 @@ export function GameMenu({
         >
             <MenuRow onPress={onRename}>Renommer la partie</MenuRow>
             <MenuRow onPress={onEnd}>Terminer la partie</MenuRow>
+            <MenuRow onPress={onEndAndReplay}>Terminer et rejouer</MenuRow>
             <MenuRow
                 danger
                 onPress={onDelete}

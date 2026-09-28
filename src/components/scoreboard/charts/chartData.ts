@@ -47,7 +47,12 @@ export function buildSeries(game: Game): Series {
     const running: Record<string, number> = {};
     for (const id of playerKeys) running[id] = 0;
 
-    const cumulative: Record<string, number>[] = [];
+    // Round 0, every player at 0: so the line chart shows movement from a flat
+    // baseline as soon as round 1 is filled in, instead of starting mid-air.
+    const zeroRow: Record<string, number> = { round: 0 };
+    for (const id of playerKeys) zeroRow[id] = 0;
+    const cumulative: Record<string, number>[] = [zeroRow];
+
     game.rounds.forEach((r, i) => {
         const row: Record<string, number> = { round: i + 1 };
         for (const id of playerKeys) {

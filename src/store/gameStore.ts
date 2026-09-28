@@ -4,7 +4,7 @@
 import * as customGames from "@/db/customGames";
 import * as history from "@/db/history";
 import { setCustomRules, type GameRule } from "@/games";
-import { cloneGame, uid } from "@/lib/game";
+import { cloneGame, createGame, uid } from "@/lib/game";
 import type { Game } from "@/lib/types";
 
 import { loadActiveGame, persistActiveGame } from "./active";
@@ -69,6 +69,14 @@ export function endActive(): void {
     set({ active: null, history: [ended, ...state.history] });
 }
 
+/** Ends the active game and immediately starts a new one with the same rule and players. */
+export function endAndReplay(): Game | null {
+    if (!state.active) return null;
+    const id = state.active.id;
+    endActive();
+    return replay(id);
+}
+
 export function deleteActive(): void {
     set({ active: null });
 }
@@ -116,4 +124,19 @@ export function resume(id: string): Game | null {
     history.deleteHistory(id);
     set({ active: reopened, history: state.history.filter((g) => g.id !== id) });
     return reopened;
+}
+
+/**
+ * Starts a brand-new game with the same rule and player names as a finished
+ * one, but no rounds — unlike `resume`, which reopens the same game with its
+ * rounds intact. Keeps the finished game in history. Safe to call only when
+ * no game is active — guaranteed by routing, since history is unreachable
+ * while one is.
+ */
+export function replay(id: string): Game | null {
+    const src = state.history.find((g) => g.id === id);
+    if (!src) return null;
+    const next = createGame({ gameRuleId: src.gameRuleId, players: src.players.map((p) => p.name), maxGameScore: src.maxGameScore });
+    set({ active: next });
+    return next;
 }

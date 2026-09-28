@@ -1,13 +1,8 @@
-import { Redirect } from "expo-router";
-
 import { NewGame } from "@/components/home/NewGame";
-import { useActiveGame } from "@/store/useGame";
 
 export default function HomeScreen() {
-    // One game at a time: while a game is active the home is the game itself, so
-    // launching the app resumes it and a new game can only start once the active
-    // one is ended (or deleted) from the in-game menu.
-    const active = useActiveGame();
-    if (active) return <Redirect href="/game" />;
+    // One game at a time: NewGame shows the "Nouvelle partie" form, or the active
+    // game as a resumable card if there is one — it no longer force-redirects into
+    // /game, so leaving the scoreboard for home doesn't just bounce back into it.
     return <NewGame />;
 }

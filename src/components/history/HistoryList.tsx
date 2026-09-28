@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { getRule } from "@/games";
 import type { Game } from "@/lib/types";
-import { resume } from "@/store/gameStore";
+import { replay, resume } from "@/store/gameStore";
 import { useHistory } from "@/store/useGame";
 import { useColors } from "@/theme/colors";
 
@@ -40,6 +40,9 @@ export function HistoryList() {
                 onOpen={() => router.push(`/detail/${item.id}`)}
                 onResume={() => {
                     if (resume(item.id)) router.navigate("/game");
+                }}
+                onReplay={() => {
+                    if (replay(item.id)) router.navigate("/game");
                 }}
             />
         ),

@@ -1,10 +1,10 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { computeTotals } from "@/lib/game";
 import { getRule } from "@/games";
-import { resume } from "@/store/gameStore";
+import { replay, resume } from "@/store/gameStore";
 import { useHistory } from "@/store/useGame";
 import { useColors } from "@/theme/colors";
 
@@ -36,6 +36,9 @@ export function Detail({ gameId }: { gameId: string }) {
     )[0];
     const onResume = () => {
         if (resume(game.id)) router.navigate("/game");
+    };
+    const onReplay = () => {
+        if (replay(game.id)) router.navigate("/game");
     };
 
     return (
@@ -87,13 +90,21 @@ export function Detail({ gameId }: { gameId: string }) {
                     winnerId={winner.id}
                 />
 
-                <View className="px-4 pt-5">
+                <View className="gap-2.5 px-4 pt-5">
                     <PrimaryButton
                         onPress={onResume}
                         arrow={false}
                     >
                         Reprendre la partie
                     </PrimaryButton>
+                    <Pressable
+                        onPress={onReplay}
+                        accessibilityRole="button"
+                        accessibilityLabel="Rejouer avec les mêmes joueurs"
+                        className="h-12 items-center justify-center rounded-xl bg-keymuted active:opacity-70 dark:bg-keymuted-dark"
+                    >
+                        <Text className="text-sm font-semibold text-ink dark:text-ink-dark">Rejouer avec les mêmes joueurs</Text>
+                    </Pressable>
                 </View>
             </ScrollView>
 

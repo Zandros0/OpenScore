@@ -1,15 +1,17 @@
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useWindowDimensions, View, type LayoutChangeEvent } from "react-native";
 
 import { getRule } from "@/games";
 import type { Game } from "@/lib/types";
-import { deleteActive, endActive, renameActive, setScore } from "@/store/gameStore";
+import { deleteActive, endActive, endAndReplay, renameActive, setScore } from "@/store/gameStore";
 import { useTotals } from "@/store/useGame";
 
 import { CalcKeyboard } from "../keyboard/CalcKeyboard";
 import { ChartsModal } from "./charts/ChartsModal";
+import { Confetti } from "./Confetti";
 import { GameHeader } from "./Header";
+import { Podium } from "./Podium";
 import { ScoreGrid, type Editing } from "./ScoreGrid";
 import { GameMenu, RenameSheet } from "./Sheets";
 
@@ -42,22 +44,54 @@ export function ScoreBoard({ game }: { game: Game }) {
         return Math.max(minColW, equalFit);
     }, [game.players, containerW]);
 
-    const lastRound = game.rounds[game.rounds.length - 1];
-    const lastFilled = !lastRound || game.players.every((p) => typeof lastRound.scores[p.id] === "number");
-    // Stop offering a new round once the round cap (maxRounds) is reached.
-    const roundCapReached = rule.maxRounds != null && game.rounds.length >= rule.maxRounds;
-    const displayRounds = lastFilled && !roundCapReached ? [...game.rounds, { id: "__draft__", scores: {} }] : game.rounds;
+    // A game (partie) target score, distinct from the rule's per-round cap: this game's
+    // own override when set at creation (e.g. Papayo's "objectif de points"), else the
+    // rule's own maxGameScore for custom rules that define one.
+    const targetScore = game.maxGameScore ?? rule.maxGameScore;
 
     // Progress toward whichever end condition applies. A game cap (partie) ends when
     // *someone* reaches it, so we track the highest running total regardless of who is
     // winning (works for both directions). Otherwise fall back to round-count progress.
     // Null when neither cap is set.
-    const leadTotal = Math.max(...Object.values(totals), 0);
-    const progress = rule.maxGameScore
-        ? leadTotal / rule.maxGameScore
+    const totalsValues = Object.values(totals);
+    const leadTotal = Math.max(...totalsValues, 0);
+    const leadersAtTop = totalsValues.filter((v) => v === leadTotal).length;
+    const progress = targetScore
+        ? leadTotal / targetScore
         : rule.maxRounds
           ? game.rounds.length / rule.maxRounds
           : null;
+
+    const lastRound = game.rounds[game.rounds.length - 1];
+    const lastFilled = !lastRound || game.players.every((p) => typeof lastRound.scores[p.id] === "number");
+    // The target ends the game once exactly one player is at or past it — several
+    // players tied at (or above) the target keep play going until the tie breaks,
+    // even if they're all over. Whoever crosses it can keep going past it too. Gated on
+    // `lastFilled`: mid-round, only some players have this round's score in their total,
+    // so an early entrant crossing the target first would trip this before their
+    // opponents' scores (who might match or beat them) are even in.
+    const scoreCapReached = lastFilled && targetScore != null && leadTotal >= targetScore && leadersAtTop === 1;
+    // Stop offering a new round once either cap is reached.
+    const roundCapReached = (rule.maxRounds != null && game.rounds.length >= rule.maxRounds) || scoreCapReached;
+    const displayRounds = lastFilled && !roundCapReached ? [...game.rounds, { id: "__draft__", scores: {} }] : game.rounds;
+
+
+    // The confetti burst fires once, right when the target is first reached with a
+    // clear leader — not on every re-render while the game stays capped, and not just
+    // because a resumed or reopened game happens to already be capped on mount. The
+    // podium (rendered straight off `scoreCapReached` below) has no such guard: it's
+    // meant to stay up for as long as the game stays capped.
+    const [showConfetti, setShowConfetti] = useState(false);
+    const wasCapped = useRef(scoreCapReached);
+    useEffect(() => {
+        if (scoreCapReached && !wasCapped.current) {
+            setShowConfetti(true);
+            const t = setTimeout(() => setShowConfetti(false), 2200);
+            wasCapped.current = true;
+            return () => clearTimeout(t);
+        }
+        wasCapped.current = scoreCapReached;
+    }, [scoreCapReached]);
 
     // Move to the next player without a score on this row; close when the row is full.
     const goNext = (justSetId: string | null) => {
@@ -140,6 +174,7 @@ export function ScoreBoard({ game }: { game: Game }) {
                     game={game}
                     rule={rule}
                     progress={progress}
+                    onBack={goHome}
                     onCharts={() => setChartsOpen(true)}
                     onMenu={() => setMenuOpen(true)}
                 />
@@ -166,6 +201,15 @@ export function ScoreBoard({ game }: { game: Game }) {
 
             {!landscape && keyboard("sheet")}
 
+            {showConfetti && <Confetti />}
+            {scoreCapReached && (
+                <Podium
+                    game={game}
+                    rule={rule}
+                    totals={totals}
+                />
+            )}
+
             <ChartsModal
                 visible={chartsOpen}
                 onClose={() => setChartsOpen(false)}
@@ -184,6 +228,11 @@ export function ScoreBoard({ game }: { game: Game }) {
                     setMenuOpen(false);
                     endActive();
                     goHome();
+                }}
+                onEndAndReplay={() => {
+                    setMenuOpen(false);
+                    setEditing(null);
+                    endAndReplay();
                 }}
                 onDelete={() => {
                     setMenuOpen(false);

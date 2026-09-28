@@ -13,6 +13,8 @@ export type Game = {
     rounds: Round[];
     startedAt: number;
     endedAt: number | null;
+    /** Per-game override of the rule's `maxGameScore`, set at creation (e.g. Papayo's target). */
+    maxGameScore?: number;
 };
 
 /** Mapping playerId -> running total. */

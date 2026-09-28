@@ -15,7 +15,17 @@ function winnerSort(game: Game) {
     return { totals, sorted, rule };
 }
 
-export function HistoryCard({ game, onOpen, onResume }: { game: Game; onOpen: () => void; onResume: () => void }) {
+export function HistoryCard({
+    game,
+    onOpen,
+    onResume,
+    onReplay,
+}: {
+    game: Game;
+    onOpen: () => void;
+    onResume: () => void;
+    onReplay: () => void;
+}) {
     const { totals, sorted, rule } = winnerSort(game);
     const winner = sorted[0];
     const date = new Date(game.endedAt ?? game.startedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
@@ -76,6 +86,14 @@ export function HistoryCard({ game, onOpen, onResume }: { game: Game; onOpen: ()
                     className="h-11 flex-1 items-center justify-center rounded-[10px] bg-keymuted active:opacity-70 dark:bg-keymuted-dark"
                 >
                     <Text className="text-[13px] font-semibold text-ink dark:text-ink-dark">Détail</Text>
+                </Pressable>
+                <Pressable
+                    onPress={onReplay}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Rejouer avec les mêmes joueurs : ${game.name}`}
+                    className="h-11 flex-1 items-center justify-center rounded-[10px] bg-keymuted active:opacity-70 dark:bg-keymuted-dark"
+                >
+                    <Text className="text-[13px] font-semibold text-ink dark:text-ink-dark">Rejouer</Text>
                 </Pressable>
                 <Pressable
                     onPress={onResume}
