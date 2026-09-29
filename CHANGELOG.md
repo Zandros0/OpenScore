@@ -17,7 +17,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- The app crashing on launch on the newest iOS version.
+- The app crashing on launch on the newest iOS version. Now uses Expo's own official fix instead of the original hand-written workaround, which also makes links opened while the app is already running work correctly.
 - The keyboard pushing the New Game and custom-game forms to the top instead of scrolling to the field being typed into.
 - "Ajouter un joueur" not focusing the newly added player field, requiring an extra tap before typing.
 
